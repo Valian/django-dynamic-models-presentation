@@ -1,0 +1,9 @@
+1. Przedstawienie siebie oraz domeny projektu (5 min)
+2. Przedstawienie problemu oraz rozważanych rozwiązań wraz z ich zaletami i wadami (star schema, bazy NoSQL, bazy time-series jak InfluxDB) (10 min)
+3. Dynamiczne tworzenie klas w pythonie (funkcja type) wraz z prostym przykładem (5 min)
+4. Dynamiczne stworzenie modelu Django oraz synchronizacja tabeli bez użycia migracji (5 min)
+5. Przechowywanie definicji pól modelu jako modeli w Django, wraz z modelem centralnym, skrótem (cached_property) do otrzymania gotowego modelu oraz walidacją definicji pól (10 min)
+6. Użycie z Django Rest Framework, tworzenie i pobieranie danych (10 min)
+7. Problemy i rozwiązania - klucze obce do dynamicznych tabel, wewnętrzne cache'owanie modeli przez Django, ograniczenie dowolności tabel w celu łatwiejszej pracy z nimi (wymagane pola) (10 min)
+8. Q & A (5 min)
+
