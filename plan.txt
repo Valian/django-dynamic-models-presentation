@@ -7,3 +7,325 @@
 7. Problemy i rozwiązania - klucze obce do dynamicznych tabel, wewnętrzne cache'owanie modeli przez Django, ograniczenie dowolności tabel w celu łatwiejszej pracy z nimi (wymagane pola) (10 min)
 8. Q & A (5 min)
 
+
+let's start simple - this is the real hero of my story
+type
+
+It does basically two things:
+a = 5
+assert type(a) == int
+
+The second thing is much more interesting - type allows to create classes dynamically
+
+class MyClass(MyParentClass):
+   foo = 5
+   bar = 5
+
+is the same as:
+
+MyClass = type('MyClass', (MyParentClass,), {"foo": 5, "bar": 5})
+
+general syntax is
+
+type(name: string, bases: List[Type], attrs: Dict)
+
+
+Let's try to use it for Django classes
+
+For example, let's consider given basic model
+
+class Event(Model):
+    timestamp = models.DateTimeField(auto_now_add=True)
+    country = models.CharField(max_length=3)
+    source = models.CharField(max_length=10)
+
+
+it can be created dynamically in this way
+Event = type('Event', (Model,), {
+    'timestamp': models.DateTimeField(auto_now_add=True),
+    'country':' models.CharField(max_length=3),
+    'source': models.CharField(max_length=10),
+    '__module__': 'myapp.models'
+})
+
+
+Ok, but we still can't use it (no tables in database).
+
+With regular model, to make it usable, we have to:
+1. Put this definition in models.py
+2. Run manage.py makemigrations to generate migrations
+3. Run manage.py migrate to apply them
+
+How to do it with dynamic model?
+
+- no migrations (it's, well, dynamic) - we need to figure it by ourselves
+
+from django.db import connection
+
+with connection.schema_editor() as editor:
+    editor.create_model(Event)
+
+
+it will only create, but won't check if model already exists and needs to be updated. Easy to fix it (at least with adding new columns)
+
+Django introspection to the rescue
+connection.introspection.get_table_list(cursor)
+connection.introspection.get_table_description(cursor, table_name)
+
+Updating model looks like this (basic version, only with adding fields)
+
+existing_fields = connection.introspection.get_table_description(cursor, table_name)
+existing_fields_names = {f.name for f in existing_fields}
+local_fields = model._meta.local_fields
+local_not_existing_fields = {f for f in local_fields if field.column not in existing_fields_names}
+for field in local_not_existing_fields:
+    with connection.schema_editor() as editor:
+        editor.add_field(model, field)
+
+
+Whole code to ensure model in database is synced:
+
+def sync_dynamic_model(model):
+    with connection.cursor() as cursor:
+        tables = {t.name for t in connection.introspection.get_table_list(cursor)}
+        table_name = model._meta.db_table
+        if table_name in tables:
+            existing_fields = connection.introspection.get_table_description(cursor, table_name)
+            existing_fields_names = {f.name for f in existing_fields}
+            local_fields = model._meta.local_fields
+            local_not_existing_fields = {f for f in local_fields if field.column not in existing_fields_names}
+            for field in local_not_existing_fields:
+                with connection.schema_editor() as editor:
+                    editor.add_field(model, field)
+                    # update, remove etc are omitted for brevity
+        else:
+            with connection.schema_editor() as editor:
+                editor.create_model(model)
+
+
+To sum up:
+
+Event = type('Event', (Model,), {
+    'timestamp': models.DateTimeField(auto_now_add=True),
+    'country':' models.CharField(max_length=3),
+    'source': models.CharField(max_length=10),
+    '__module__': 'myapp.models'
+})
+
+sync_dynamic_model(Event)
+
+Event.objects.create(country='PL', source='desktop')
+event = Event.objects.first()
+assert event.country == 'PL'
+assert event.source == 'desktop'
+
+
+will work!
+
+
+Ok, but what's about keeping definitions? Right now we always used only hardcoded attributes, and it's not very useful
+
+The obvious solution? Use Django models for keeping field definitions
+
+
+Let's make one central model and additional model for fields:
+
+class DynamicModel(Model):
+    name = CharField(max_length=255)
+
+
+class DynamicField(Model):
+    name = CharField(max_length=255)
+    type = CharField(max_length=20, choices=[
+      ('int', 'IntegerField'),
+      ('datetime', 'DateTimeField'),
+      ('text', 'TextField'),
+    ])
+
+    model = models.ForeignKey(to=DynamicModel, on_delete=models.PROTECT, related_name="fields")
+
+
+now, we can create some models:
+
+event_model = DynamicModel(name='event')
+
+and fields:
+
+event_time_field = DynamicField(name='timestamp', type='datetime', model=event_model)
+event_name_field = DynamicField(name='name', type='text', model=event_model)
+event_value_field = DynamicField(name='value', type='int', model=event_model)
+
+
+All what's left is to use `type` with data fetched from database:
+
+type_to_field = {
+    'int': IntegerField(),
+    'datetime': DateTimeField(),
+    'text': TextField(),
+}
+
+
+EventModel = type(event_model.name, (Model,), {
+  **{f.name: type_to_field[f.type] for f in event_model.fields.all()},
+  '__module__': 'myapp.models'
+})
+
+
+and create or update table in the database using function we've created:
+
+
+sync_dynamic_model(EventModel)
+
+voila! We can use it as every other django model.
+
+But, what about field attributes? (default, max_length, null, blank, etc)
+currently we can't set them, since we don't have a place to store them. What are our choices?
+
+1. Add all possible attributes to DynamicField
+2. Add one-to-one models storing fields about each attribute (IntField, CharField etc)
+3. Add JSON field to store options and validate it before each save
+
+
+I've chosen option 3. Adding place for options is trivial.
+
+class DynamicField(Model):
+    ...
+    options = JSONField()
+
+But validation is harder. Let's assume config:
+
+`{'max_length': 200}`.
+
+How can we decide if it's correct for a given field? We need to create validator (for example, django Form will work),
+
+class CharFieldValidator(Form):
+  field_cls = CharField
+  max_length = IntegerField(default=255)
+
+
+now, we can call it:
+
+validator = CharFieldValidator(field.options)
+if validator.is_valid():
+  data = validator.cleaned_data
+  return validator.field_cls(**data)
+
+
+
+now, instead of using type_to_field, let's create type_to_field_cls
+
+type_to_validator_cls = {
+    'int': IntegerFieldValidator,
+    'datetime': DateTimeFieldValidator,
+    'char': CharFieldValidator,
+}
+
+
+and let's write a nice, small utility for getting properly configured field:
+
+def get_field(type, config):
+    validator_cls = type_to_validator_cls[type]
+    validator = validator_cls(field.options)
+    if validator.is_valid():
+      data = validator.cleaned_data
+      return validator.field_cls(**data)
+    else:
+      raise ValidationError(validator.errors)
+
+
+This will allow us to easily extend list of available fields and validate all options. Let's hook it up into the model
+
+class DynamicField(Model):
+    ...
+
+    @property  # or @cached_property
+    def django_field(self):
+        return get_field(self.type, self.options)
+
+    # automatically called by django admin and forms
+    def clean(self):
+        assert self.django_field
+
+
+Thanks to this shortcut, we can get our field just by calling:
+
+DynamicField(type='char', options={'max_length': 100}).django_field
+
+
+Ok, so it's nice. Let's go back and make similar shortcut for DynamicModel:
+
+class DynamicModel(Model):
+    ...
+
+    @cached_property
+    def django_model(self):
+        return type(self.name, (Model,), {
+          **{f.name: f.field for f in self.fields.all()},
+          '__module__': 'myapp.models'
+        })
+
+
+So now, our usage is even simpler, and we have dynamic options and validation for fields:
+
+EventModel = DynamicModel.objects.get(name='event').django_model
+EventModel.objects.all()
+
+
+Bonus: Usage with DRF
+
+urls.py:
+urlpatterns = [
+    path("model/<int:model_pk>/", DynamicModelViewSet.as_view())
+]
+
+
+class DynamicModelViewSet(ModelViewSet):
+
+    @cached_property
+    def model(self):
+        return DynamicModel.objects.prefetch_related("fields").get(pk=self.kwargs["modelF_pk"])
+
+    def get_queryset(self):
+        return self.model.django_model.objects.all()
+
+    def get_serializer_cls(self):
+        class Meta:
+            fields = '__all__'
+            model = model_cls
+
+        return type("DynamicModelSerializer", (ModelSerializer,), {"Meta": Meta})
+
+
+Warnings:
+
+1. Django caching engine
+
+from django.apps import apps
+
+
+class DynamicModel(Model):
+    ...
+
+    @cached_property
+    def django_model(self):
+        try:
+            return apps.get_model(app_label, class_name)
+        except LookupError:
+            return  type(self.name, (Model,), {
+              **{f.name: f.field for f in self.fields.all()},
+              '__module__': 'myapp.models'
+            })
+
+
+
+Remove from cache:
+TODO
+
+
+2. ForeignKeys
+
+No reverse relationships. We have to use `+` as related_name to work around this
+
+models.ForeignKey(StaticModel, related_name="+")
+
+
