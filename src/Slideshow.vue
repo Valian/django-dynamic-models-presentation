@@ -2,10 +2,10 @@
 .eg-theme-agrume
   #business-logic.eg-slideshow
     slide(enter="fadeIn", leave="fadeOut")
-      h1 Introduction to Docker
+      h1 Dynamic Django models
 
       h2 Jakub Skałecki @jskalc
-      h4.u-text-centered Mindspace, 28.03.2019
+      h4.u-text-centered Pycon, 12.09.2019
 
     slide(enter="fadeIn", leave="fadeOut", steps="3")
       h2 About me
@@ -18,10 +18,92 @@
       h3(v-if="step === 2") Using docker everywhere for 4 years
       h3(v-if="step === 3") This presentation was created with Docker help :)
 
+    slide(enter="fadeIn", leave="fadeOut", steps="2")
+      h2 Creating classes in Python
+      highlight-code.eg-code-block.code-box(lang="python").
+        class RegularClass(RegularBaseClass):
+            a = 5
+
+            def normal_function(self):
+                return f"I'm a function result! a = {self.a}"
+
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 2").
+        >>> obj = RegularClass()
+        >>> obj.a
+        5
+        >>> obj.normal_function()
+        "I'm a function result! a = 5"
+        >>> isinstance(obj, RegularBaseClass)
+        True
+
+
+    slide(enter="fadeIn", leave="fadeOut", steps="5")
+      h2 Our hero - type function
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 2").
+        >>> type(5)
+        'int'  # < class 'int'>, but my highligter doesn't allow it
+        >>> type('abc')
+        'str'
+        >>> type(RegularClass())
+        'RegularClass'
+        >>> type(RegularClass()) == RegularClass
+        True
+
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 3").
+        >>> type(RegularClass)
+        'type'
+        >>> type(type)
+        'type'
+
+      eg-transition.u-text-centered(enter='bounceInLeft', leave='fadeOut', v-if="step >= 4")
+        blockquote With three arguments, return a new type object. This is essentially a dynamic form of the class statement.
+
+
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 4").
+        # type(name, bases, dict)
+        >>> def func(self):
+        ...     return f"I'm a function result! a = {self.a}"
+        ...
+        >>> DynamicClass = type(
+        ...    'DynamicClass',
+        ...    (RegularBaseClass,),
+        ...    {"a": 5, "normal_function": func}
+        ... )
+
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 5").
+        >>> obj = DynamicClass()
+        >>> obj.a
+        5
+        >>> obj.normal_function()
+        "I'm a function result! a = 5"
+        >>> type(obj) == DynamicClass
+        True
+        >>> isinstance(obj, RegularBaseClass)
+        True
+
+    slide(enter="fadeIn", leave="fadeOut", steps="2")
+      h2 Dynamic Django model
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 1").
+        class Event(Model):
+            timestamp = models.DateTimeField(auto_now_add=True)
+            country = models.CharField(max_length=3)
+            source = models.CharField(max_length=10)
+
+      p Same, but dynamic
+
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 1").
+        >>> Event = type('Event', (Model,), {
+        ...     'timestamp': models.DateTimeField(auto_now_add=True),
+        ...     'country':' models.CharField(max_length=3),
+        ...     'source': models.CharField(max_length=10),
+        ...     '__module__': 'myapp.models'
+        ... })
+
+    <!-- Old presentation -->
 
     slide(enter="fadeIn", leave="fadeOut")
       .u-text-centered
-        img.presentation-image--solo(src="./assets/docker.svg")
+        <!-- img.presentation-image&#45;&#45;solo(src="./assets/docker.svg")-->
 
     slide(enter="fadeIn", leave="fadeOut", steps="2")
       h2 Docker is a solution
@@ -50,7 +132,7 @@
         li(v-if="step > 2") no separation between projects - different version of database anyone?
         li(v-if="step > 3") Virtual machines are a partial solution, but adds overhead
       .u-text-centered
-        img.presentation-image(src="./assets/ha-ha-works-on-my-machine.jpg", v-if="step > 4")
+        <!--img.presentation-image(src="./assets/ha-ha-works-on-my-machine.jpg", v-if="step > 4")-->
 
     slide(enter="fadeIn", leave="fadeOut", steps="2")
       h2 How Docker can help you?
@@ -83,7 +165,7 @@
     slide(enter="fadeIn", leave="fadeOut")
       .u-text-centered
         eg-transition.u-text-centered(enter='bounceInLeft', leave='fadeOut')
-          img.presentation-image--solo(src="./assets/magic.gif", width="80%")
+          <!-- img.presentation-image&#45;&#45;solo(src="./assets/magic.gif", width="80%")-->
 
 
     slide(enter="fadeIn", leave="fadeOut", steps="5")
@@ -211,7 +293,7 @@
     slide(enter="fadeIn", leave="fadeOut")
       h2 Comparision vs VM
       .u-text-centered
-        img.presentation-image(src="./assets/docker_vs_vm.jpeg")
+        <!-- img.presentation-image(src="./assets/docker_vs_vm.jpeg")-->
 
     slide(enter="fadeIn", leave="fadeOut")
       h2 Thank you!
