@@ -41,11 +41,11 @@ class Event(Model):
 
 
 it can be created dynamically in this way
-Event = type('Event', (Model,), {
+Event = type('Event', (models.Model,), {
     'timestamp': models.DateTimeField(auto_now_add=True),
-    'country':' models.CharField(max_length=3),
+    'country': models.CharField(max_length=3),
     'source': models.CharField(max_length=10),
-    '__module__': 'myapp.models'
+    '__module__': 'apps.metrics'
 })
 
 
@@ -87,7 +87,7 @@ Whole code to ensure model in database is synced:
 
 def sync_dynamic_model(model):
     with connection.cursor() as cursor:
-        tables = {t.name for t in connection.introspection.get_table_list(cursor)}
+``        tables = {t.name for t in connection.introspection.get_table_list(cursor)}
         table_name = model._meta.db_table
         if table_name in tables:
             existing_fields = connection.introspection.get_table_description(cursor, table_name)

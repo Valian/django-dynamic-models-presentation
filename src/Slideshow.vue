@@ -82,22 +82,116 @@
         True
 
     slide(enter="fadeIn", leave="fadeOut", steps="2")
-      h2 Dynamic Django model
+      h2 Django models
       highlight-code.eg-code-block.code-box(lang="python", v-if="step === 1").
         class Event(Model):
             timestamp = models.DateTimeField(auto_now_add=True)
             country = models.CharField(max_length=3)
             source = models.CharField(max_length=10)
 
-      p Same, but dynamic
-
-      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 1").
+      p(v-if="step === 2") Same, but dynamic
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 2").
         >>> Event = type('Event', (Model,), {
         ...     'timestamp': models.DateTimeField(auto_now_add=True),
         ...     'country':' models.CharField(max_length=3),
         ...     'source': models.CharField(max_length=10),
         ...     '__module__': 'myapp.models'
         ... })
+
+
+    slide(enter="fadeIn", leave="fadeOut", steps="4")
+      h2 Migrations
+      h3 In normal Django application
+      ul
+        li(v-if="step > 1") Create new model
+        li(v-if="step > 2") Create migrations
+        li(v-if="step > 3") Run migrations
+
+    slide(enter="fadeIn", leave="fadeOut", steps="3")
+      h2 Migrations
+      h3 With dynamic models
+      h1.u-text-centered(v-if="step === 2") ??
+      blockquote.u-text-centered(v-if="step === 3") We have to do it by ourselves
+
+    slide(enter="fadeIn", leave="fadeOut", steps="5")
+      h2 Database API
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 1").
+        from django.db import connection
+
+        with connection.schema_editor() as editor:
+          editor.create_model(Event)
+
+
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 2").
+        >>> Event.objects.create(country='PL', source='mobile')
+        < Event: Event object (1)>
+
+        >>> e = Event.objects.first()
+        >>> e.pk
+        1
+
+        >>> e.timestamp
+        datetime.datetime(2019, 9, 3, 18, 44, 54, 220157, tzinfo=< UTC >)
+
+      h3.u-text-centered(v-if="step === 3") But there is a problem
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 4").
+        >>> with connection.schema_editor() as editor:
+        ...     editor.create_model(Event)
+        ...
+        Traceback (most recent call last):
+        .
+        .
+        .
+        ProgrammingError: relation "metrics_event" already exists
+
+      h3.u-text-centered(v-if="step === 5") We need to manually check if operation is allowed
+
+    slide(enter="fadeIn", leave="fadeOut", steps="6")
+      h2 Own own migrations
+      h3.u-text-centered(v-if="step <= 2") Django introspection to the rescue!
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 2").
+        >>> cursor = connection.cursor()
+        >>> introspection.get_table_list(cursor)
+        [TableInfo(name='myapp_event', type='t')]
+
+        >>> introspection.get_table_description(cursor, 'myapp_event')
+        [
+           FieldInfo(name='id', null_ok=False, type_code=23, ...),
+           FieldInfo(name='timestamp', null_ok=False, ...),
+           ...
+        ]
+
+      p(v-if="step === 3") Get existing fields
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 3").
+        existing_fields = introspection.get_table_description(cursor, table_name)
+        existing_fields_names = {f.name for f in existing_fields}
+
+      p(v-if="step === 3") Get not created fields
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 3").
+        local_fields = model._meta.local_fields
+        local_not_existing_fields = {
+            f for f
+            in local_fields
+            if field.column not in existing_fields_names
+        }
+
+      p(v-if="step === 4") Create missing
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 4").
+        for field in local_not_existing_fields:
+            with connection.schema_editor() as editor:
+                editor.add_field(model, field)
+
+      p(v-if="step === 5") Remove deleted
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 5").
+        with connection.schema_editor() as editor:
+            editor.remove_field(model, field)
+
+      p(v-if="step === 6") Update changed etc
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 6").
+        with connection.schema_editor() as editor:
+            editor.alter_field(model, old_field, new_field)
+
+
 
     <!-- Old presentation -->
 
