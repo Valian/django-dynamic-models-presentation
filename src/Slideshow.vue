@@ -15,7 +15,7 @@
         li Backend, DevOps, Frontend, GameDev, Machine Learning...
         li Blogger (sometimes)
         li Polyglot programmer, technology enthusiast
-      h3(v-if="step === 2") Using docker everywhere for 4 years
+      h3(v-if="step === 2") Working with Django for around 5 years
       h3(v-if="step === 3") This presentation was created with Docker help :)
 
     slide(enter="fadeIn", leave="fadeOut", steps="2")
@@ -91,12 +91,12 @@
 
       p(v-if="step === 2") Same, but dynamic
       highlight-code.eg-code-block.code-box(lang="python", v-if="step === 2").
-        >>> Event = type('Event', (Model,), {
-        ...     'timestamp': models.DateTimeField(auto_now_add=True),
-        ...     'country':' models.CharField(max_length=3),
-        ...     'source': models.CharField(max_length=10),
-        ...     '__module__': 'myapp.models'
-        ... })
+        Event = type('Event', (Model,), {
+            'timestamp': models.DateTimeField(auto_now_add=True),
+            'country': models.CharField(max_length=3),
+            'source': models.CharField(max_length=10),
+            '__module__': 'myapp.models'
+        })
 
 
     slide(enter="fadeIn", leave="fadeOut", steps="4")
@@ -111,7 +111,7 @@
       h2 Migrations
       h3 With dynamic models
       h1.u-text-centered(v-if="step === 2") ??
-      blockquote.u-text-centered(v-if="step === 3") We have to do it by ourselves
+      h2.u-text-centered(v-if="step === 3") We have to do it by ourselves!
 
     slide(enter="fadeIn", leave="fadeOut", steps="5")
       h2 Database API
@@ -191,9 +191,163 @@
         with connection.schema_editor() as editor:
             editor.alter_field(model, old_field, new_field)
 
+    slide(enter="fadeIn", leave="fadeOut", steps="1")
+      h2 TODO - meme it's nice, but it's not dynamic
+
+    slide(enter="fadeIn", leave="fadeOut", steps="3")
+      h2 We need to store definitions somewhere...
+      h3(v-if="step === 2") The obvious solution?
+      h3(v-if="step === 3") Let's use database!
 
 
-    <!-- Old presentation -->
+    slide(enter="fadeIn", leave="fadeOut", steps="3")
+      h2 Central "model" model
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step >= 2").
+        class DynamicModel(Model):
+            name = CharField(max_length=255)
+
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 3").
+        class DynamicField(Model):
+            model = models.ForeignKey(
+                to=DynamicModel,
+                related_name="fields"
+            )
+
+            name = CharField(max_length=255)
+            type = CharField(max_length=20, choices=[
+                ('int', 'IntegerField'),
+                ('datetime', 'DateTimeField'),
+                ('text', 'TextField'),
+            ])
+
+    slide(enter="fadeIn", leave="fadeOut", steps="2")
+      h2 Usage example
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 1").
+        # let's create model
+        event_model = DynamicModel(name='event')
+
+        # and fields
+        event_time_field = DynamicField(
+            name='timestamp',
+            type='datetime',
+            model=event_model
+        )
+        event_name_field = DynamicField(
+            name='name',
+            type='text',
+            model=event_model
+        )
+        event_value_field = DynamicField(
+            name='value',
+            type='int',
+            model=event_model
+        )
+
+      p(v-if="step === 2") Now we only need matching from type to field...
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 2").
+        type_to_field = {
+            'int': IntegerField(),
+            'datetime': DateTimeField(),
+            'text': TextField(),
+        }
+
+      p(v-if="step === 2") And our dynamic model is ready!
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 2").
+        fields = {
+            f.name: type_to_field[f.type]
+            for f in event_model.fields.all()
+        }
+
+        EventModel = type(event_model.name, (Model,), {
+            **fields,
+            '__module__': 'myapp.models'
+        })
+
+    slide(enter="fadeIn", leave="fadeOut", steps="2")
+      h2 Field options
+      h3(v-if="step <= 2") We need to customize our fields
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 2").
+        class DynamicField(Model):
+            ...
+            options = JSONField()
+
+
+        DynamicField(
+            name='label'
+            type='char',
+            options={'max_length': 50}
+        )
+
+
+    slide(enter="fadeIn", leave="fadeOut", steps="5")
+      h2 Validation?
+      h3(v-if="step === 1") Per-type validators
+
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step >= 2 && step <= 3").
+        class CharFieldValidator(Form):
+            field_cls = CharField
+            max_length = IntegerField(default=255)
+
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 3").
+        validator = CharFieldValidator(field.options)
+
+        if validator.is_valid():
+            data = validator.cleaned_data
+            return validator.field_cls(**data)
+
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step >= 4").
+        type_to_validator_cls = {
+            'int': IntegerFieldValidator,
+            'datetime': DateTimeFieldValidator,
+            'text': TextFieldValidator,
+            'char': CharFieldValidator,
+        }
+
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 5").
+        def get_field(type, config):
+            validator_cls = type_to_validator_cls[type]
+            validator = validator_cls(field.options)
+            if validator.is_valid():
+                data = validator.cleaned_data
+                return validator.field_cls(**data)
+            else:
+                raise ValidationError(validator.errors)
+
+    slide(enter="fadeIn", leave="fadeOut", steps="3")
+      h2 My favourite shortcut
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 1").
+        class DynamicField(Model):
+            ...
+
+            @property
+            def django_field(self):
+                return get_field(self.type, self.options)
+
+            # automatically called by django admin and forms
+            def clean(self):
+                assert self.django_field
+
+      p(v-if="step === 2") Now we can get our field just by calling
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 2").
+        DynamicField(type='char', options={'max_length': 100}).django_field
+
+      p(v-if="step === 3") Similar shortcut for DynamicModel
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 3").
+        class DynamicModel(Model):
+          ...
+
+          @property
+          def django_model(self):
+              return type(self.name, (Model,), {
+                  **{f.name: f.field for f in self.fields.all()},
+                  '__module__': 'myapp.models'
+              })
+
+    slide(enter="fadeIn", leave="fadeOut", steps="1")
+      h2 Final usage
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 1").
+        EventModel = DynamicModel.objects.get(name='event').django_model
+        EventModel.objects.all()
 
     slide(enter="fadeIn", leave="fadeOut")
       .u-text-centered
