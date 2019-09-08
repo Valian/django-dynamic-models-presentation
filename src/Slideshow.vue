@@ -11,12 +11,36 @@
       h2 About me
       ul(v-if="step === 1")
         li Currently Technical Team Leader at VideoBeat
-        li CTO at <a href='https://pvpc.eu'>PvP Center</a>
+        li Co-founder of eSport startup pvpc.eu
         li Backend, DevOps, Frontend, GameDev, Machine Learning...
         li Blogger (sometimes)
         li Polyglot programmer, technology enthusiast
-      h3(v-if="step === 2") Working with Django for around 5 years
-      h3(v-if="step === 3") This presentation was created with Docker help :)
+      h3(v-if="step >= 2") Working with Python for ~5 years
+      h3(v-if="step === 3") With Django for ~4 years
+
+    slide(enter="fadeIn", leave="fadeOut", steps="5")
+      h2 TODO - meme with high technical complexity
+
+    slide(enter="fadeIn", leave="fadeOut", steps="5")
+      h2 Motivation
+      h3(v-if="step >= 2 && step <= 3") Static Django Models are great...
+      h3(v-if="step === 3") ...but sometimes not flexible enough
+      h2(v-if="step === 4") Examples
+      ul(v-if="step === 4")
+        li Data sets with structure defined by client or market requirements
+        li Multi-tenant applications with slightly different clients
+        li Content Management Systems
+      eg-transition.u-text-centered(enter='bounceInLeft', leave='fadeOut', v-if="step >= 5")
+        blockquote Dynamic models aren't easy. Think twice if it's the good solution for you.
+        blockquote In this presentation, I'll try to show you how we've dealt with it.
+
+    slide(enter="fadeIn", leave="fadeOut", steps="5")
+      h2 Other choices
+      ul
+        li Single table with all possible columns
+        li Star / Snowflake schema
+        li NoSQL database
+        li Time-series database (our second bet)
 
     slide(enter="fadeIn", leave="fadeOut", steps="2")
       h2 Creating classes in Python
@@ -147,7 +171,7 @@
       h3.u-text-centered(v-if="step === 5") We need to manually check if operation is allowed
 
     slide(enter="fadeIn", leave="fadeOut", steps="6")
-      h2 Own own migrations
+      h2 Our own migrations
       h3.u-text-centered(v-if="step <= 2") Django introspection to the rescue!
       highlight-code.eg-code-block.code-box(lang="python", v-if="step === 2").
         >>> cursor = connection.cursor()
@@ -348,6 +372,25 @@
       highlight-code.eg-code-block.code-box(lang="python", v-if="step === 1").
         EventModel = DynamicModel.objects.get(name='event').django_model
         EventModel.objects.all()
+
+    slide(enter="fadeIn", leave="fadeOut", steps="1")
+      h2 Pros
+      ul
+        li Dynamic, runtime-defined shape of the database
+        li Lower infrastructure complexity (single database for dynamically-shaped and static data)
+        li Fast writes / reads (compared to Star schema)
+
+    slide(enter="fadeIn", leave="fadeOut", steps="1")
+      h2 Cons
+      ul
+        li Higher code complexity (initial bootstrapping and future usage)
+        li Requires some Django "hacks"
+        li Hard time with Foreign Keys
+
+    slide(enter="fadeIn", leave="fadeOut", steps="1")
+      h1 Thank you!
+      h2 Any questions?
+
 
     slide(enter="fadeIn", leave="fadeOut")
       .u-text-centered
