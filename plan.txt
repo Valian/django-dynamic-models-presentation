@@ -283,7 +283,7 @@ class DynamicModelViewSet(ModelViewSet):
 
     @cached_property
     def model(self):
-        return DynamicModel.objects.prefetch_related("fields").get(pk=self.kwargs["modelF_pk"])
+        return DynamicModel.objects.prefetch_related("fields").get(pk=self.kwargs["model_pk"])
 
     def get_queryset(self):
         return self.model.django_model.objects.all()

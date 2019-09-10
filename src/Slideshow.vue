@@ -15,32 +15,54 @@
         li Backend, DevOps, Frontend, GameDev, Machine Learning...
         li Blogger (sometimes)
         li Polyglot programmer, technology enthusiast
-      h3(v-if="step >= 2") Working with Python for ~5 years
-      h3(v-if="step === 3") With Django for ~4 years
+      .u-text-centered(v-if="step === 2")
+        img.presentation-image(src="./assets/python.png", height="100px")
+        h3 5 years
 
-    slide(enter="fadeIn", leave="fadeOut", steps="5")
-      h2 TODO - meme with high technical complexity
+      .u-text-centered(v-if="step === 3")
+        img.presentation-image(src="./assets/django.png", height="100px")
+        h3 ~4 years
 
     slide(enter="fadeIn", leave="fadeOut", steps="5")
       h2 Motivation
       h3(v-if="step >= 2 && step <= 3") Static Django Models are great...
       h3(v-if="step === 3") ...but sometimes not flexible enough
-      h2(v-if="step === 4") Examples
+      h3(v-if="step === 4") Examples
       ul(v-if="step === 4")
         li Data sets with structure defined by client or market requirements
         li Multi-tenant applications with slightly different clients
         li Content Management Systems
-      eg-transition.u-text-centered(enter='bounceInLeft', leave='fadeOut', v-if="step >= 5")
-        blockquote Dynamic models aren't easy. Think twice if it's the good solution for you.
-        blockquote In this presentation, I'll try to show you how we've dealt with it.
+
+      .u-text-centered(v-if="step === 5")
+        h3 Our use case
+        p.u-text-centered We're calculating conversion rates using TV advertisements airings data and <strong>custom conversions</strong> defined by clients
+        img(src="./assets/tv.png", height="200px")
+
+      eg-transition.u-text-centered(enter='bounceInLeft', leave='fadeOut', v-if="step >= 6")
+        blockquote Dynamic models aren't easy. Think twice if it's the good solution for you. In this presentation, I'll try to show you how we've dealt with it.
+
 
     slide(enter="fadeIn", leave="fadeOut", steps="5")
-      h2 Other choices
+      h2 Possible solutions
       ul
-        li Single table with all possible columns
-        li Star / Snowflake schema
-        li NoSQL database
-        li Time-series database (our second bet)
+        li(v-if="step > 1") Single table with all possible columns
+        li(v-if="step > 2") Star / Snowflake schema
+        li(v-if="step > 3") NoSQL database
+        li(v-if="step > 4") Time-series database
+
+
+    slide(enter="fadeIn", leave="fadeOut", steps="3")
+      h2 Definition
+      .u-text-centered
+        eg-transition.u-text-centered(enter='bounceInLeft', leave='fadeOut')
+          blockquote Dynamic Django model can be created, used, updated and removed without changing code
+        p(v-if="step > 1") In other words
+        eg-transition.u-text-centered(enter='bounceInLeft', leave='fadeOut', v-if="step > 2")
+          blockquote It allows to store arbitrary data with schema known at the runtime
+
+
+    slide.u-text-centered(enter="fadeIn", leave="fadeOut", steps="1")
+      img.presentation-image.presentation-image--solo(src='./assets/talkischeap.jpg')
 
     slide(enter="fadeIn", leave="fadeOut", steps="2")
       h2 Creating classes in Python
@@ -63,36 +85,42 @@
 
     slide(enter="fadeIn", leave="fadeOut", steps="5")
       h2 Our hero - type function
+      p(v-if="step === 2") Basic usage
       highlight-code.eg-code-block.code-box(lang="python", v-if="step === 2").
         >>> type(5)
-        'int'  # < class 'int'>, but my highligter doesn't allow it
+        <&#8203;class 'int'>
+
         >>> type('abc')
-        'str'
+        <&#8203;class 'str'>
+
         >>> type(RegularClass())
-        'RegularClass'
+        <&#8203;class 'RegularClass'>
+
         >>> type(RegularClass()) == RegularClass
         True
 
+      p(v-if="step === 3") More interesting
       highlight-code.eg-code-block.code-box(lang="python", v-if="step === 3").
         >>> type(RegularClass)
-        'type'
+        <&#8203;class 'type'>
+
         >>> type(type)
-        'type'
+        <&#8203;class 'type'>
 
-      eg-transition.u-text-centered(enter='bounceInLeft', leave='fadeOut', v-if="step >= 4")
-        blockquote With three arguments, return a new type object. This is essentially a dynamic form of the class statement.
+      template(v-if="step === 4")
+        p With three arguments, returns a new class
+        highlight-code.eg-code-block.code-box(lang="python").
+          # type(name, bases, dict)
+          >>> def func(self):
+          ...     return f"I'm a function result! a = {self.a}"
+          ...
+          >>> DynamicClass = type(
+          ...    'DynamicClass',
+          ...    (RegularBaseClass,),
+          ...    {"a": 5, "normal_function": func}
+          ... )
+        p This is essentially a dynamic form of the <em>class</em> statement.
 
-
-      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 4").
-        # type(name, bases, dict)
-        >>> def func(self):
-        ...     return f"I'm a function result! a = {self.a}"
-        ...
-        >>> DynamicClass = type(
-        ...    'DynamicClass',
-        ...    (RegularBaseClass,),
-        ...    {"a": 5, "normal_function": func}
-        ... )
 
       highlight-code.eg-code-block.code-box(lang="python", v-if="step === 5").
         >>> obj = DynamicClass()
@@ -107,6 +135,7 @@
 
     slide(enter="fadeIn", leave="fadeOut", steps="2")
       h2 Django models
+      p(v-if="step === 1") Static model
       highlight-code.eg-code-block.code-box(lang="python", v-if="step === 1").
         class Event(Model):
             timestamp = models.DateTimeField(auto_now_add=True)
@@ -125,9 +154,9 @@
 
     slide(enter="fadeIn", leave="fadeOut", steps="4")
       h2 Migrations
-      h3 In normal Django application
+      h3 In a regular Django application
       ul
-        li(v-if="step > 1") Create new model
+        li(v-if="step > 1") Create the new model
         li(v-if="step > 2") Create migrations
         li(v-if="step > 3") Run migrations
 
@@ -139,26 +168,32 @@
 
     slide(enter="fadeIn", leave="fadeOut", steps="5")
       h2 Database API
-      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 1").
+
+      .u-text-centered
+        img(v-if="step === 1", src="./assets/editor.png")
+
+      p(v-if="step === 2") SchemaEditor
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 2").
         from django.db import connection
 
         with connection.schema_editor() as editor:
           editor.create_model(Event)
 
 
-      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 2").
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 3").
         >>> Event.objects.create(country='PL', source='mobile')
-        < Event: Event object (1)>
+        <&#8203;Event: Event object (1)>
 
         >>> e = Event.objects.first()
         >>> e.pk
         1
 
         >>> e.timestamp
-        datetime.datetime(2019, 9, 3, 18, 44, 54, 220157, tzinfo=< UTC >)
+        datetime.datetime(2019, 9, 3, 18, 44, 54, 220157, tzinfo=<&#8203;UTC>)
 
-      h3.u-text-centered(v-if="step === 3") But there is a problem
-      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 4").
+      h3.u-text-centered(v-if="step === 4") But there is a problem
+
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 5").
         >>> with connection.schema_editor() as editor:
         ...     editor.create_model(Event)
         ...
@@ -168,9 +203,9 @@
         .
         ProgrammingError: relation "metrics_event" already exists
 
-      h3.u-text-centered(v-if="step === 5") We need to manually check if operation is allowed
+      h3.u-text-centered(v-if="step === 6") We need to manually check if operation is allowed
 
-    slide(enter="fadeIn", leave="fadeOut", steps="6")
+    slide(enter="fadeIn", leave="fadeOut", steps="7")
       h2 Our own migrations
       h3.u-text-centered(v-if="step <= 2") Django introspection to the rescue!
       highlight-code.eg-code-block.code-box(lang="python", v-if="step === 2").
@@ -185,13 +220,15 @@
            ...
         ]
 
-      p(v-if="step === 3") Get existing fields
-      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 3").
-        existing_fields = introspection.get_table_description(cursor, table_name)
+      p(v-if="step >= 3 && step <= 4") Get existing fields
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step >= 3 && step <= 4").
+        existing_fields = introspection.get_table_description(
+          cursor, table_name
+        )
         existing_fields_names = {f.name for f in existing_fields}
 
-      p(v-if="step === 3") Get not created fields
-      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 3").
+      p(v-if="step === 4") Compute not created fields
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 4").
         local_fields = model._meta.local_fields
         local_not_existing_fields = {
             f for f
@@ -199,29 +236,29 @@
             if field.column not in existing_fields_names
         }
 
-      p(v-if="step === 4") Create missing
-      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 4").
+      p(v-if="step === 5") Create missing
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 5").
         for field in local_not_existing_fields:
             with connection.schema_editor() as editor:
                 editor.add_field(model, field)
 
-      p(v-if="step === 5") Remove deleted
-      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 5").
+      p(v-if="step === 6") Remove deleted
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 6").
         with connection.schema_editor() as editor:
             editor.remove_field(model, field)
 
-      p(v-if="step === 6") Update changed etc
-      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 6").
+      p(v-if="step === 7") Update changed etc
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 7").
         with connection.schema_editor() as editor:
             editor.alter_field(model, old_field, new_field)
 
-    slide(enter="fadeIn", leave="fadeOut", steps="1")
-      h2 TODO - meme it's nice, but it's not dynamic
+    slide.u-text-centered(enter="fadeIn", leave="fadeOut", steps="1")
+      img.presentation-image.presentation-image--solo(src='./assets/dynamic.jpg')
 
     slide(enter="fadeIn", leave="fadeOut", steps="3")
       h2 We need to store definitions somewhere...
       h3(v-if="step === 2") The obvious solution?
-      h3(v-if="step === 3") Let's use database!
+      h3(v-if="step === 3") Let's use the database!
 
 
     slide(enter="fadeIn", leave="fadeOut", steps="3")
@@ -353,7 +390,25 @@
 
       p(v-if="step === 2") Now we can get our field just by calling
       highlight-code.eg-code-block.code-box(lang="python", v-if="step === 2").
-        DynamicField(type='char', options={'max_length': 100}).django_field
+        >>> DynamicField(
+        ...   type='char',
+        ...   options={'max_length': 100}
+        ... ).django_field
+
+        <&#8203;django.forms.fields.CharField object at 0x7fe>
+
+        >>> DynamicField(
+        ...   type='int',
+        ...   options={'max_length': 'abc'}
+        ... ).django_field
+
+        Traceback (most recent call last):
+        .
+        .
+        .
+        ValidationError: {'max_length': ['Enter a whole number.']}
+
+
 
       p(v-if="step === 3") Similar shortcut for DynamicModel
       highlight-code.eg-code-block.code-box(lang="python", v-if="step === 3").
@@ -372,6 +427,34 @@
       highlight-code.eg-code-block.code-box(lang="python", v-if="step === 1").
         EventModel = DynamicModel.objects.get(name='event').django_model
         EventModel.objects.all()
+
+    slide(enter="fadeIn", leave="fadeOut", steps="2")
+      h2 Bonus: Usage with DRF
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 1").
+        class DynamicModelViewSet(ModelViewSet):
+
+          def get_model(self):
+            return DynamicModel.objects.get(pk=self.kwargs["model_pk"])
+
+          def get_queryset(self):
+            dynamic_model = self.get_model()
+            return dynamic_model.django_model.objects.all()
+
+          def get_serializer_cls(self):
+            class Meta:
+              fields = '__all__'
+              model = model_cls
+
+            return type(
+              "DynamicModelSerializer",
+              (ModelSerializer,),
+              {"Meta": Meta}
+            )
+
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 2").
+        urlpatterns = [
+          path("model/<&#8203;int:model_pk>/", DynamicModelViewSet.as_view())
+        ]
 
     slide(enter="fadeIn", leave="fadeOut", steps="1")
       h2 Pros
