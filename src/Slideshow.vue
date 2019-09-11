@@ -42,8 +42,8 @@
         blockquote Dynamic models aren't easy. Think twice if it's the good solution for you. In this presentation, I'll try to show you how we've dealt with it.
 
 
-    slide(enter="fadeIn", leave="fadeOut", steps="5")
-      h2 Possible solutions
+    slide(enter="fadeIn", leave="fadeOut", steps="1")
+      h2 Other choices
       ul
         li(v-if="step > 1") Single table with all possible columns
         li(v-if="step > 2") Star / Snowflake schema
