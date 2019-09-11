@@ -9,7 +9,7 @@ import 'eagle.js/dist/eagle.css'
 import 'eagle.js/dist/themes/gourmet/gourmet.css'
 import 'eagle.js/dist/themes/agrume/agrume.css'
 import VueHighlightJS from 'vue-highlight.js'
-import 'highlight.js/styles/github.css'
+import './darcula.css'
 
 import router from './router'
 

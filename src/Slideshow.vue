@@ -42,7 +42,7 @@
         blockquote Dynamic models aren't easy. Think twice if it's the good solution for you. In this presentation, I'll try to show you how we've dealt with it.
 
 
-    slide(enter="fadeIn", leave="fadeOut", steps="1")
+    slide(enter="fadeIn", leave="fadeOut", steps="5")
       h2 Other choices
       ul
         li(v-if="step > 1") Single table with all possible columns
@@ -205,7 +205,7 @@
 
       h3.u-text-centered(v-if="step === 6") We need to manually check if operation is allowed
 
-    slide(enter="fadeIn", leave="fadeOut", steps="7")
+    slide(enter="fadeIn", leave="fadeOut", steps="9")
       h2 Our own migrations
       h3.u-text-centered(v-if="step <= 2") Django introspection to the rescue!
       highlight-code.eg-code-block.code-box(lang="python", v-if="step === 2").
@@ -220,8 +220,8 @@
            ...
         ]
 
-      p(v-if="step >= 3 && step <= 4") Get existing fields
-      highlight-code.eg-code-block.code-box(lang="python", v-if="step >= 3 && step <= 4").
+      p(v-if="step === 3") Get existing fields
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 3").
         existing_fields = introspection.get_table_description(
           cursor, table_name
         )
@@ -236,14 +236,14 @@
             if field.column not in existing_fields_names
         }
 
-      p(v-if="step === 5") Create missing
-      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 5").
+      p(v-if="step >= 5 && step <= 7") Create missing
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step >= 5 && step <= 7").
         for field in local_not_existing_fields:
             with connection.schema_editor() as editor:
                 editor.add_field(model, field)
 
-      p(v-if="step === 6") Remove deleted
-      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 6").
+      p(v-if="step >= 6  && step <= 7") Remove deleted
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step >= 6 && step <= 7").
         with connection.schema_editor() as editor:
             editor.remove_field(model, field)
 
@@ -251,6 +251,38 @@
       highlight-code.eg-code-block.code-box(lang="python", v-if="step === 7").
         with connection.schema_editor() as editor:
             editor.alter_field(model, old_field, new_field)
+
+      p(v-if="step === 8") With this knowledge, we can write <em>synchronize</em> func
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 8").
+        def synchronize_dynamic_model(model):
+            with connection.cursor() as cursor:
+                tables = connection.introspection.get_table_list(cursor)
+                table_name = model._meta.db_table
+                if table_name not in {t.name for t in tables}:
+                    with connection.schema_editor() as editor:
+                        editor.create_model(model)
+                else:
+                    # update table logic
+                    ...
+
+      p(v-if="step === 9") And use it
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 9").
+          attributes = {
+            'timestamp': models.DateTimeField(auto_now_add=True),
+            '__module__': 'myapp.models'
+          }
+
+          Event = type('Event', (Model,), attributes)
+          synchronize_dynamic_model(Event)
+          Event.objects.create()
+
+          # modify fields and recreate class
+          fields['source'] = models.CharField(max_length=10, default='')
+          Event = type('Event', (Model,), attributes)
+          synchronize_dynamic_model(Event)
+
+          assert Event.objects.first()
+
 
     slide.u-text-centered(enter="fadeIn", leave="fadeOut", steps="1")
       img.presentation-image.presentation-image--solo(src='./assets/dynamic.jpg')
