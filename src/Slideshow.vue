@@ -13,8 +13,9 @@
         li Currently Technical Team Leader at VideoBeat
         li Co-founder of eSport startup pvpc.eu
         li Backend, DevOps, Frontend, GameDev, Machine Learning...
-        li Blogger (sometimes)
+        li Blogger @ https://rock-it.pl (sometimes)
         li Polyglot programmer, technology enthusiast
+
       .u-text-centered(v-if="step === 2")
         img.presentation-image(src="./assets/python.png", height="100px")
         h3 5 years
@@ -25,8 +26,11 @@
 
     slide(enter="fadeIn", leave="fadeOut", steps="5")
       h2 Motivation
-      h3(v-if="step >= 2 && step <= 3") Static Django Models are great...
-      h3(v-if="step === 3") ...but sometimes not flexible enough
+      eg-transition.u-text-centered(enter='bounceInLeft', v-if="step >= 2 && step <= 3")
+        h3 Static Django Models are great...
+      eg-transition.u-text-centered(enter='bounceInRight', v-if="step === 3")
+        h3 ...but sometimes not flexible enough
+
       h3(v-if="step === 4") Examples
       ul(v-if="step === 4")
         li Data sets with structure defined by client or market requirements
@@ -42,13 +46,24 @@
         blockquote Dynamic models aren't easy. Think twice if it's the good solution for you. In this presentation, I'll try to show you how we've dealt with it.
 
 
-    slide(enter="fadeIn", leave="fadeOut", steps="5")
+    slide(enter="fadeIn", leave="fadeOut", steps="4")
       h2 Other choices
-      ul
-        li(v-if="step > 1") Single table with all possible columns
-        li(v-if="step > 2") Star / Snowflake schema
-        li(v-if="step > 3") NoSQL database
-        li(v-if="step > 4") Time-series database
+      .u-text-centered(v-if="step === 1", style="height: 50vh;")
+        h3 Table with all possible columns
+        img(src="./assets/single table.png", style="height: 70%")
+
+      .u-text-centered(v-if="step === 2", style="height: 50vh;")
+        h3 Star / Snowflake schema
+        img(src="./assets/star_example_trans.png", style="height: 100%")
+
+      .u-text-centered(v-if="step === 3", style="height: 50vh;")
+        h3 NoSQL database
+        img(src="./assets/cassandra.png", style="height: 40%")
+        img(src="./assets/mongo.png", style="height: 40%")
+
+      .u-text-centered(v-if="step === 4", style="height: 50vh;")
+        h3 Time-series database
+        img(src="./assets/influx.png")
 
 
     slide(enter="fadeIn", leave="fadeOut", steps="3")
@@ -148,7 +163,7 @@
             'timestamp': models.DateTimeField(auto_now_add=True),
             'country': models.CharField(max_length=3),
             'source': models.CharField(max_length=10),
-            '__module__': 'myapp.models'
+            '__module__': 'myapp.models'  # required by Django
         })
 
 
@@ -313,7 +328,7 @@
                 ('text', 'TextField'),
             ])
 
-    slide(enter="fadeIn", leave="fadeOut", steps="2")
+    slide(enter="fadeIn", leave="fadeOut", steps="4")
       h2 Usage example
       highlight-code.eg-code-block.code-box(lang="python", v-if="step === 1").
         # let's create model
@@ -336,25 +351,31 @@
             model=event_model
         )
 
-      p(v-if="step === 2") Now we only need matching from type to field...
-      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 2").
+      p(v-if="step >= 2 && step <= 3") Now we only need matching from type to field...
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step >= 2 && step <= 3").
         type_to_field = {
             'int': IntegerField(),
             'datetime': DateTimeField(),
             'text': TextField(),
         }
 
-      p(v-if="step === 2") And our dynamic model is ready!
-      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 2").
+      p(v-if="step === 3") ...construct django fields required by model...
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 3").
         fields = {
             f.name: type_to_field[f.type]
             for f in event_model.fields.all()
         }
 
+
+      p(v-if="step === 4") and we're ready to go!
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 4").
         EventModel = type(event_model.name, (Model,), {
             **fields,
             '__module__': 'myapp.models'
         })
+
+        synchronize_dynamic_model(EventModel)
+
 
     slide(enter="fadeIn", leave="fadeOut", steps="2")
       h2 Field options
@@ -441,7 +462,6 @@
         ValidationError: {'max_length': ['Enter a whole number.']}
 
 
-
       p(v-if="step === 3") Similar shortcut for DynamicModel
       highlight-code.eg-code-block.code-box(lang="python", v-if="step === 3").
         class DynamicModel(Model):
@@ -455,9 +475,24 @@
               })
 
     slide(enter="fadeIn", leave="fadeOut", steps="1")
+      h2 Automatic synchronization
+      highlight-code.eg-code-block.code-box(lang="python").
+        from django.db.models.signals import post_save
+
+        @post_save(sender=DynamicField)
+        def synchronize(field_instance, **kwargs):
+            synchronize_dynamic_model(field_instance.model.django_model)
+
+    slide(enter="fadeIn", leave="fadeOut", steps="1")
       h2 Final usage
       highlight-code.eg-code-block.code-box(lang="python", v-if="step === 1").
-        EventModel = DynamicModel.objects.get(name='event').django_model
+        # just create model and fields
+        event_model = DynamicModel(name='event')
+        DynamicField.objects.create('timestamp', 'datetime', event_model)
+        DynamicField.objects.create('name', 'text', event_model)
+
+        # and it's ready to use
+        EventModel = event_model.django_model
         EventModel.objects.all()
 
     slide(enter="fadeIn", leave="fadeOut", steps="2")
@@ -487,6 +522,42 @@
         urlpatterns = [
           path("model/<&#8203;int:model_pk>/", DynamicModelViewSet.as_view())
         ]
+    slide(enter="fadeIn", leave="fadeOut", steps="2")
+      h2 Warning
+      p(v-if="step === 1") Related name conflicts
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 1").
+        type(DynamicModel, (Model,), {
+            'field': ForeignKey(
+                to=StaticModel,
+                related_name="dynamic_model"
+            )
+        }
+
+        type(OtherDynamicModel, (Model,), {
+            'field': ForeignKey(
+                to=StaticModel,
+                related_name="dynamic_model"
+            )
+        }
+
+
+      p(v-if="step === 2") Solution
+      highlight-code.eg-code-block.code-box(lang="python", v-if="step === 2").
+        type(DynamicModel, (Model,), {
+            'field': ForeignKey(
+                to=StaticModel,
+                related_name="+"  # no reverse relation
+            )
+        }
+
+        type(OtherDynamicModel, (Model,), {
+            'field': ForeignKey(
+                to=StaticModel,
+                related_name="+"  # no reverse relation
+            )
+        }
+
+
 
     slide(enter="fadeIn", leave="fadeOut", steps="1")
       h2 Pros
@@ -735,7 +806,7 @@ export default {
       font-size: 0.8em;
       right: 20px;
       bottom: 20px;
-      background: url(https://logos-download.com/wp-content/uploads/2016/02/Twitter_logo_bird_transparent_png.png) no-repeat right;
+      background: url(./assets/twitter.png) no-repeat right;
       background-size: contain;
     }
 

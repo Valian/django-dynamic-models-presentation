@@ -87,7 +87,7 @@ Whole code to ensure model in database is synced:
 
 def sync_dynamic_model(model):
     with connection.cursor() as cursor:
-``        tables = {t.name for t in connection.introspection.get_table_list(cursor)}
+        tables = {t.name for t in connection.introspection.get_table_list(cursor)}
         table_name = model._meta.db_table
         if table_name in tables:
             existing_fields = connection.introspection.get_table_description(cursor, table_name)
@@ -329,3 +329,9 @@ No reverse relationships. We have to use `+` as related_name to work around this
 models.ForeignKey(StaticModel, related_name="+")
 
 
+
+# feedback
+
+- Split other choices into separate slides with images and logos (influxDB)
+- Explain cons a bit better (FKs and django invalidation)
+-

@@ -1,6 +1,6 @@
-# Python business logic presentation
+# Django dynamic models presentation
 
-This repository contains a presentation presented on Mindspace Developers Meetup
+This repository contains a presentation presented on PyConPL 2019 conference.
 
 
 ## Usage
