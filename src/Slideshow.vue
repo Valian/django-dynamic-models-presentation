@@ -26,10 +26,8 @@
 
     slide(enter="fadeIn", leave="fadeOut", steps="5")
       h2 Motivation
-      eg-transition.u-text-centered(enter='bounceInLeft', v-if="step >= 2 && step <= 3")
-        h3 Static Django Models are great...
-      eg-transition.u-text-centered(enter='bounceInRight', v-if="step === 3")
-        h3 ...but sometimes not flexible enough
+      h3(v-if="step >= 2 && step <= 3") Static Django Models are great...
+      h3(v-if="step === 3") ...but sometimes not flexible enough
 
       h3(v-if="step === 4") Examples
       ul(v-if="step === 4")
@@ -418,9 +416,9 @@
         }
 
       highlight-code.eg-code-block.code-box(lang="python", v-if="step === 5").
-        def get_field(type, config):
+        def get_field(type, options):
             validator_cls = type_to_validator_cls[type]
-            validator = validator_cls(field.options)
+            validator = validator_cls(options)
             if validator.is_valid():
                 data = validator.cleaned_data
                 return validator.field_cls(**data)
